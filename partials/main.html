@@ -1,0 +1,55 @@
+<div class="row">
+    <div class="col-md-6">
+        <div>
+          <div ng-controller="LeafletController">
+            <leaflet center="center" markers="markers" layers="layers" width="100%" height="300" geojson="leafletGeojson"></leaflet>
+            <div class="panel panel-default ng-hide" ng-show="loggedin">
+              <div class="panel-heading">
+                <div class="btn-group">
+                  <a class="btn btn-default" ng-disabled="zoomLevel < 18" ng-click="displayLayer()">
+                    <i class="fa fa-map-marker"></i>
+                    <i class="fa fa-refresh fa-spin ng-hide" ng-show="loading.layer"></i>
+                  </a>
+                  <a class="btn btn-default" ng-disabled="zoomLevel < 18" ng-click="displayBuildingLayer()">
+                    <i class="fa fa-cube"></i>
+                  </a>
+                  <a class="btn btn-default" ng-disabled="zoomLevel < 18" ng-click="addNode()">
+                    <i class="fa fa-crosshairs"></i>
+                  </a>
+                  <a class="btn btn-default" ng-class="{'btn-danger': errorLocalisation, 'btn-primary': localised, 'default': errorLocalisation !== undefiend && !localised}" ng-disabled="disabledLocation" ng-click="updateLocation()">
+                    <i class="fa fa-location-arrow"></i>
+                </a>
+                <a class="btn btn-danger ng-hide" ng-show="overpassLayer" ng-click="hideLayer()">
+                    <i class="fa fa-trash-o"></i>
+                </a>
+                </div>
+                <div class="alert alert-danger ng-hide" ng-show="errorLocalisation">{{errorLocalisation.message}}</div>
+              </div>
+              <div class="panel-body ng-hide" ng-show="currentNode">
+                <div class="form-group">
+                    <input class="form-control" type="text" ng-model="currentNode.properties.name" placeholder="name"/>
+                </div>
+                <div class="form-group ng-hide" ng-show="currentNode.properties.amenity !== undefined">
+                    <input class="form-control" type="text" ng-model="currentNode.properties.amenity"/>
+                </div>
+                <div class="form-group ng-hide" ng-show="currentNode.properties.shop !== undefined">
+                    <input class="form-control" type="text" ng-model="currentNode.properties.shop"/>
+                </div>
+                <button ng-disabled="!currentNode" class="form-control btn btn-primary" ng-click="updateName(currentNode)">Update
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="ng-hide" ng-show="relation.tags">
+            <accordion close-others="oneAtATime">
+                <accordion-group heading="Tags">
+                    <div tags-table tags="relation.tags"></div>
+                </accordion-group>
+            </accordion>
+        </div>
+    </div>
+
+</div>
