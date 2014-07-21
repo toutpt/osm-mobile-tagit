@@ -1,0 +1,13 @@
+{
+  "name": "osm-mobile-tagit",
+  "description": "OSM Relation editor",
+  "repository": "https://github.com/makinacorpus/osm-mobile-tagit",
+  "devDependencies": {
+    "bower": "*",
+    "gulp": "*",
+    "gulp-concat":"*",
+    "gulp-jshint": "*",
+    "gulp-jasmine": "*",
+    "gulp-angular-gettext": "*"
+  }
+}

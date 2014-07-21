@@ -1,0 +1,4 @@
+html {
+    -ms-touch-action: manipulation;
+    touch-action: manipulation;
+}
