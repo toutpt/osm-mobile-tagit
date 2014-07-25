@@ -1,6 +1,5 @@
 /*jshint strict:false */
 /*global angular:false */
-/*global L:false */
 /*global osmtogeojson:false */
 
 angular.module('osm').filter('slice', function() {
@@ -150,7 +149,7 @@ angular.module('osm.services').factory('osmService',
                     relations: relations
                 };
                 if (filter === undefined){
-                    filter = function(item){
+                    filter = function(){
                         return false;
                     };
                 }

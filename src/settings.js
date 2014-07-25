@@ -5,16 +5,13 @@ angular.module('osm.services').factory('settingsService',
     ['$localStorage', function($localStorage){
         return {
             settings: $localStorage.$default({
-                relationSelected: '',
                 username: '',
                 userid: '',
                 credentials: '',
                 nodes: [],
                 changeset: '',
                 changesetID: '',
-                osmtags: {},
-                geojsonLayers:[],
-                history:[]
+                geojsonLayers:[]
             })
         };
     }]

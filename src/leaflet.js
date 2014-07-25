@@ -6,7 +6,7 @@ L.Icon.Default.imagePath = 'images/';
 angular.module('osm.services').factory('leafletService',
     ['$q', 'leafletData', 'osmService', function($q, leafletData, osmService){
         return {
-            center: {lat: 47.2150, lng: -1.5551, zoom: 18},//, autoDiscover: true},
+            center: {lat: 47.2150, lng: -1.5551, zoom: 19},//, autoDiscover: true},
             geojson: undefined,
             layers: {
                 baselayers: {
@@ -107,153 +107,6 @@ angular.module('osm.controllers').controller('LeafletController',
             });
             return deferred.promise;
         };
-        $scope.loadOverpassBusStop = function(){
-            $scope.loading.busstop = true;
-            $scope.loading.busstopOK = false;
-            $scope.loading.busstopKO = false;
-            var onError = function(){
-                $scope.loading.busstop = false;
-                $scope.loading.busstopOK = false;
-                $scope.loading.busstopKO = true;
-            };
-            var onSuccess = function(){
-                $scope.loading.busstop = false;
-                $scope.loading.busstopOK = true;
-                $scope.loading.busstopKO = false;
-            };
-            leafletService.getBBox().then(function(bbox){
-                var filter = function(feature){
-                    return feature.geometry.type !== 'Point';
-                };
-                var query = '<?xml version="1.0" encoding="UTF-8"?>';
-                query += '<osm-script output="json" timeout="10"><union>';
-                query += '<query type="node">';
-                query += '<has-kv k="highway" v="bus_stop"/>';
-                query += '<bbox-query ' + bbox + '/>';
-                query += '</query>';
-                query += '<query type="node">';
-                query += '<has-kv k="public_transport" v="stop_position"/>';
-                query += '<bbox-query ' + bbox + '/>';
-                query += '</query></union>';
-                query += '<print mode="body"/>';
-                query += '<recurse type="down"/>';
-                query += '<print mode="skeleton" order="quadtile"/>';
-                query += '</osm-script>';
-                $scope.overpassToLayer(query, filter).then(onSuccess,onError);
-            },onError);
-        };
-        $scope.loadOverpassWays = function(){
-            $scope.loading.ways = true;
-            $scope.loading.waysOK = false;
-            $scope.loading.waysKO = false;
-            var onError = function(){
-                $scope.loading.ways = false;
-                $scope.loading.waysOK = false;
-                $scope.loading.waysKO = true;
-            };
-            var onSuccess = function(){
-                $scope.loading.ways = false;
-                $scope.loading.waysOK = true;
-                $scope.loading.waysKO = false;
-            };
-            leafletService.getBBox().then(function(bbox){
-                var query = '<?xml version="1.0" encoding="UTF-8"?>';
-                query += '<osm-script output="json" timeout="25"><union>';
-                query += '<query type="way">';
-                query += '<has-kv k="highway"/>';
-                query += '<bbox-query ' + bbox + '/>';
-                query += '</query></union>';
-                query += '<print mode="body"/>';
-                query += '<recurse type="down"/>';
-                query += '<print mode="skeleton" order="quadtile"/>';
-                query += '</osm-script>';
-                var filter = function(feature){
-                    return feature.geometry.type !== 'LineString';
-                };
-                $scope.overpassToLayer(query, filter).then(onSuccess, onError);
-            }, onError);
-        };
-        $scope.loadOSMWays = function(){
-            $scope.loadOSMData(function(feature){
-                return feature.geometry.type !== 'LineString';
-            }, function(){
-                $scope.loading.ways = false;
-                $scope.loading.waysOK = false;
-                $scope.loading.waysKO = true;
-            });
-        };
-        $scope.loadBusStop = function(){
-            $scope.loadOSMData(function(feature){
-                var filterIsNotPoint = feature.geometry.type !== 'Point';
-                var filterIsNotBusStop = feature.properties.highway !== 'bus_stop';
-                var filterIsNotPublicTransport = feature.properties.public_transport !== 'stop_position';
-                return (filterIsNotPoint && (filterIsNotBusStop || filterIsNotPublicTransport));
-            });
-        };
-        $scope.loadOSMData = function(filter){
-            leafletService.getMap().then(function(map){
-                var b = map.getBounds();
-                var bbox = '' + b.getWest() + ',' + b.getSouth() + ',' + b.getEast() + ',' + b.getNorth();
-                // s="47.1166" n="47.310" w="-1.7523" e="-1.3718
-                //var bbox = 'w="' + b.getWest() + '" s="' + b.getSouth() + '" e="' + b.getEast() + '" n="' + b.getNorth() + '"';
-                osmService.getMapGeoJSON(bbox).then(function(nodes){
-                    $scope.nodes = nodes;
-                    var feature, newFeatures = [];
-                    for (var i = 0; i < $scope.nodes.features.length; i++) {
-                        feature = $scope.nodes.features[i];
-                        if (!filter(feature)){
-                            newFeatures.push(feature);
-                        }
-                    }
-                    $scope.nodes.features = newFeatures;
-                    //display them on the map
-                    $scope.leafletGeojson = {
-                        data: $scope.nodes,
-                        pointToLayer: pointToLayer
-                    };
-                });
-            });
-        };
-        $scope.addNodeToRelation = function(node, newIndex){
-            var features = $scope.relation.features;
-            features.push($scope.currentNode);
-            if ($scope.currentNode.geometry.type === 'LineString'){
-                $scope.members.push({
-                    type: 'way',
-                    ref: $scope.currentNode.id,
-                    role: '',
-                    name: $scope.currentNode.properties.name
-                });
-            }else if ($scope.currentNode.geometry.type === 'Point'){
-                $scope.members.push({
-                    type: 'node',
-                    ref: $scope.currentNode.id,
-                    role: 'plateform',
-                    name: $scope.currentNode.properties.name
-                });
-            }
-            if (!isNaN(newIndex)){
-                $scope.moveMemberFromIndexToIndex($scope.members.length-1, newIndex);
-            }
-            leafletService.addGeoJSONLayer(
-                'relation',
-                $scope.relation,
-                $scope.relation.options
-            );
-        };
-        $scope.addGeoJSON = function(uri){
-            if ($scope.settings.geojsonLayers.indexOf(uri) === -1){
-                $scope.settings.geojsonLayers.push(uri);
-            }
-            leafletService.loadExternalLayers($scope.settings.geojsonLayers);
-        };
-        $scope.removeGeoJSON = function(uri){
-            var index = $scope.settings.geojsonLayers.indexOf(uri);
-            if (index !== -1){
-                $scope.settings.geojsonLayers.splice(index, 1);
-            }
-            leafletService.hideLayer(uri);
-        };
         $scope.hideGeoJSON = function(uri){
             leafletService.hideLayer(uri);
         };
@@ -262,8 +115,6 @@ angular.module('osm.controllers').controller('LeafletController',
             leafletService.displayLayer(uri);
         };
         $scope.updateLocationMarker = function(lat, lng){
-            console.log(JSON.stringify(lat));
-            console.log(JSON.stringify(lng));
             if (typeof(lat) !== "number"){
                 lat = parseFloat(lat);
             }
@@ -303,12 +154,16 @@ angular.module('osm.controllers').controller('LeafletController',
                 $scope.disabledLocation = true;
             }
         };
-        $scope.addNode = function(){
-            $scope.markers.newNode = {
-                lat: $scope.center.lat,
-                lng: $scope.center.lng,
-                message: 'Center'
-            };
+        $scope.toggleNewNode = function(){
+            if ($scope.markers.newNode === undefined){
+                $scope.markers.newNode = {
+                    lat: $scope.center.lat,
+                    lng: $scope.center.lng,
+                    message: 'Center'
+                };
+            }else{
+                delete $scope.markers.newNode;
+            }
         };
 
         //initialize
@@ -318,5 +173,19 @@ angular.module('osm.controllers').controller('LeafletController',
                 $scope.zoomLevel = map.getZoom();
             });
         });
+        $scope.$watch('center', function(newValue, oldValue){
+            if (oldValue === undefined){
+                return;
+            }
+            if (newValue === oldValue){
+                return;
+            }
+            if ($scope.markers.newNode === undefined){
+                return;
+            }
+            $scope.markers.newNode.lat = newValue.lat;
+            $scope.markers.newNode.lng = newValue.lng;
+        });
+
     }]
 );
