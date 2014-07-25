@@ -6,37 +6,51 @@
             <div class="panel panel-default ng-hide" ng-show="loggedin">
               <div class="panel-heading">
                 <div class="btn-group">
-                  <a class="btn btn-default" ng-disabled="zoomLevel < 18" ng-click="displayLayer()">
+                  <a class="btn" ng-class="{'btn-default': !(amenity && shop), 'btn-primary': amenity || shop}" ng-disabled="zoomLevel < 19" ng-click="toggleAmenityAndShopLayer()">
                     <i class="fa fa-map-marker"></i>
                     <i class="fa fa-refresh fa-spin ng-hide" ng-show="loading.layer"></i>
                   </a>
-                  <a class="btn btn-default" ng-disabled="zoomLevel < 18" ng-click="displayBuildingLayer()">
+                  <a class="btn" ng-class="{'btn-default': !building, 'btn-primary': building}" ng-disabled="zoomLevel < 19" ng-click="toggleBuildingLayer()">
                     <i class="fa fa-cube"></i>
                   </a>
-                  <a class="btn btn-default" ng-disabled="zoomLevel < 18" ng-click="addNode()">
+                  <a class="btn" ng-class="{'btn-default': !markers.newNode, 'btn-primary': markers.newNode}" ng-disabled="zoomLevel < 19" ng-click="toggleNewNode()">
                     <i class="fa fa-crosshairs"></i>
                   </a>
                   <a class="btn btn-default" ng-class="{'btn-danger': errorLocalisation, 'btn-primary': localised, 'default': errorLocalisation !== undefiend && !localised}" ng-disabled="disabledLocation" ng-click="updateLocation()">
                     <i class="fa fa-location-arrow"></i>
-                </a>
-                <a class="btn btn-danger ng-hide" ng-show="overpassLayer" ng-click="hideLayer()">
-                    <i class="fa fa-trash-o"></i>
-                </a>
+                  </a>
                 </div>
                 <div class="alert alert-danger ng-hide" ng-show="errorLocalisation">{{errorLocalisation.message}}</div>
+                <div class="alert alert-warning ng-hide" ng-show="zoomLevel <= 18"><i class="fa fa-warning text-warning"></i> Zoom must be >= 19 to enable tools</div>
               </div>
               <div class="panel-body ng-hide" ng-show="currentNode">
                 <div class="form-group">
                     <input class="form-control" type="text" ng-model="currentNode.properties.name" placeholder="name"/>
                 </div>
-                <div class="form-group ng-hide" ng-show="currentNode.properties.amenity !== undefined">
-                    <input class="form-control" type="text" ng-model="currentNode.properties.amenity"/>
+                <div class="form-group ng-hide" ng-show="currentNode.properties.shop === undefined">
+                    <input class="form-control" type="text" ng-model="currentNode.properties.amenity" placeholder="amenity"/>
                 </div>
-                <div class="form-group ng-hide" ng-show="currentNode.properties.shop !== undefined">
-                    <input class="form-control" type="text" ng-model="currentNode.properties.shop"/>
+                <div class="form-group ng-hide" ng-show="currentNode.properties.amenity === undefined">
+                    <input class="form-control" type="text" ng-model="currentNode.properties.shop" placeholder="shop"/>
                 </div>
                 <button ng-disabled="!currentNode" class="form-control btn btn-primary" ng-click="updateName(currentNode)">Update
                 </button>
+              </div>
+            </div>
+            <div class="panel panel-default ng-hide" ng-show="markers.newNode">
+              <div class="panel-body">
+                <div class="form-group">
+                    <input class="form-control" type="text" ng-model="markers.newNode.name" placeholder="name"/>
+                </div>
+                <div class="form-group" ng-hide="markers.newNode.shop">
+                    <input class="form-control" type="text" ng-model="markers.newNode.amenity" placeholder="amenity"/>
+                </div>
+                <div class="form-group" ng-hide="markers.newNode.amenity">
+                    <input class="form-control" type="text" ng-model="markers.newNode.shop" placeholder="shop"/>
+                </div>
+                <button ng-disabled="!(markers.newNode.amenity !== undefined || markers.newNode.name !== undefined || markers.newNode.shop !== undefined)" class="form-control btn btn-primary" ng-click="addNodeToOSM(currentNode)">Add
+                </button>
+
               </div>
             </div>
           </div>
