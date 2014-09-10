@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en" ng-app="osm">
+<html lang="en" ng-app="osmMobileTagIt">
 <head>
   <meta charset="utf-8">
   <title>OSM Mobile TagIt</title>
@@ -31,6 +31,14 @@
           </div>
           <div class="form-group ng-hide" ng-show="loggedin">
             <button class="form-control btn btn-danger" ng-click="logout()">Logout</button>
+          </div>
+        </div>
+        <div class="col-xs-12" ng-controller="ChangesetController">
+          <div class="form-group  ng-hide" ng-show="!changesetID">
+            <button class="form-control btn btn-default" ng-click="createChangeset()">Create change set</button>
+          </div>
+          <div class="form-group  ng-hide" ng-show="changesetID">
+            <button class="form-control btn btn-primary" ng-click="closeChangeset()">Save (close changeset {{changesetID}})</button>
           </div>
         </div>
       </div>

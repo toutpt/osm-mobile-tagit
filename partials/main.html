@@ -23,22 +23,29 @@
                 <div class="alert alert-danger ng-hide" ng-show="errorLocalisation">{{errorLocalisation.message}}</div>
                 <div class="alert alert-warning ng-hide" ng-show="zoomLevel <= 18"><i class="fa fa-warning text-warning"></i> Zoom must be >= 19 to enable tools</div>
               </div>
-              <div class="panel-body ng-hide" ng-show="currentNode">
+              <div class="panel-body ng-hide" ng-show="currentElement" ng-controller="SaveController">
                 <div class="form-group">
-                    <input class="form-control" type="text" ng-model="currentNode.properties.name" placeholder="name"/>
+                    <input class="form-control" type="text" ng-model="currentElement.properties.name" placeholder="name"/>
                 </div>
-                <div class="form-group ng-hide" ng-show="currentNode.properties.shop === undefined">
-                    <input class="form-control" type="text" ng-model="currentNode.properties.amenity" placeholder="amenity"/>
+                <div class="form-group ng-hide" ng-show="currentElement.properties.shop === undefined">
+                    <input class="form-control" type="text" ng-model="currentElement.properties.amenity" placeholder="amenity"/>
                 </div>
-                <div class="form-group ng-hide" ng-show="currentNode.properties.amenity === undefined">
-                    <input class="form-control" type="text" ng-model="currentNode.properties.shop" placeholder="shop"/>
+                <div class="form-group ng-hide" ng-show="currentElement.properties.amenity === undefined">
+                    <input class="form-control" type="text" ng-model="currentElement.properties.shop" placeholder="shop"/>
                 </div>
-                <button ng-disabled="!currentNode" class="form-control btn btn-primary" ng-click="updateName(currentNode)">Update
+                <alert type="'danger'" class="ng-hide" ng-show="loading.updateTags.msg">
+                  HTTP status : {{loading.updateTags.msg.status}}. Message : {{loading.updateTags.msg.data}}
+                </alert>
+                <button ng-disabled="!currentElement" class="form-control btn btn-primary" ng-click="updateTags(currentElement)">Update
+                  <i class="fa fa-refresh fa-spin ng-hide" ng-show="loading.updateTags.loading"></i>
+                  <i class="fa fa-times ng-hide" ng-show="loading.updateTags.ko"></i>
+                  <i class="fa fa-check ng-hide" ng-show="loading.updateTags.ok"></i>
                 </button>
+
               </div>
             </div>
             <div class="panel panel-default ng-hide" ng-show="markers.newNode">
-              <div class="panel-body">
+              <div class="panel-body" ng-controller="SaveController">
                 <div class="form-group">
                     <input class="form-control" type="text" ng-model="markers.newNode.name" placeholder="name"/>
                 </div>
@@ -48,21 +55,12 @@
                 <div class="form-group" ng-hide="markers.newNode.amenity">
                     <input class="form-control" type="text" ng-model="markers.newNode.shop" placeholder="shop"/>
                 </div>
-                <button ng-disabled="!(markers.newNode.amenity !== undefined || markers.newNode.name !== undefined || markers.newNode.shop !== undefined)" class="form-control btn btn-primary" ng-click="addNodeToOSM(currentNode)">Add
+                <button ng-disabled="!(markers.newNode.amenity !== undefined || markers.newNode.name !== undefined || markers.newNode.shop !== undefined)" class="form-control btn btn-primary" ng-click="addNode(currentElement)">Add
                 </button>
 
               </div>
             </div>
           </div>
-        </div>
-    </div>
-    <div class="col-md-6">
-        <div class="ng-hide" ng-show="relation.tags">
-            <accordion close-others="oneAtATime">
-                <accordion-group heading="Tags">
-                    <div tags-table tags="relation.tags"></div>
-                </accordion-group>
-            </accordion>
         </div>
     </div>
 
