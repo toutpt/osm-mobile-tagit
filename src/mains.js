@@ -3,7 +3,7 @@
 /*global L:false */
 
 
-angular.module('osm').config(['$routeProvider', function($routeProvider) {
+angular.module('osmMobileTagIt').config(['$routeProvider', function($routeProvider) {
     $routeProvider.when('/', {
         templateUrl: 'partials/main.html',
         controller: 'MainRelationController'
@@ -11,9 +11,9 @@ angular.module('osm').config(['$routeProvider', function($routeProvider) {
     $routeProvider.otherwise({redirectTo: '/'});
 }]);
 
-angular.module('osm.controllers').controller('MainRelationController',
-	['$scope', '$routeParams', 'settingsService', 'osmService', 'leafletService',
-	function($scope, $routeParams, settingsService, osmService, leafletService){
+angular.module('osmMobileTagIt.controllers').controller('MainRelationController',
+	['$scope', '$routeParams', 'settingsService', 'overpassAPI', 'leafletService',
+	function($scope, $routeParams, settingsService, overpassAPI, leafletService){
         $scope.settings = settingsService.settings;
         $scope.relationID = $routeParams.mainRelationId;
         $scope.members = [];
@@ -23,9 +23,9 @@ angular.module('osm.controllers').controller('MainRelationController',
             return L.marker(latlng);
         };
         var onEachFeature = function(feature, layer) {
-            //load clicked feature as '$scope.currentNode'
+            //load clicked feature as '$scope.currentElement'
             layer.on('click', function () {
-                $scope.currentNode = feature;
+                $scope.currentElement = feature;
             });
             if (feature.properties) {
                 var html = '<ul>';
@@ -47,9 +47,9 @@ angular.module('osm.controllers').controller('MainRelationController',
         };
         $scope.toggleAmenityAndShopLayer = function(){
             var query = '';
-            if ($scope.amenity && $scope.shop && $scope.currentNode){
-                if ($scope.currentNode.geometry.type === 'Point'){
-                    $scope.currentNode = undefined;
+            if ($scope.amenity && $scope.shop && $scope.currentElement){
+                if ($scope.currentElement.geometry.type === 'Point'){
+                    $scope.currentElement = undefined;
                 }
             }
             if ($scope.amenity){
@@ -77,7 +77,7 @@ angular.module('osm.controllers').controller('MainRelationController',
                     query += '<recurse type="down"/>';
                     query += '<print mode="skeleton" order="quadtile"/>';
                     query += '</osm-script>';
-                    osmService.overpassToGeoJSON(query, filter).then(function(geojson){
+                    overpassAPI.overpassToGeoJSON(query, filter).then(function(geojson){
                         $scope.geojsonAmenity = geojson;
                         leafletService.addGeoJSONLayer('amenity', geojson, options);
                         $scope.amenity = true;
@@ -109,7 +109,7 @@ angular.module('osm.controllers').controller('MainRelationController',
                     query += '<recurse type="down"/>';
                     query += '<print mode="skeleton" order="quadtile"/>';
                     query += '</osm-script>';
-                    osmService.overpassToGeoJSON(query, filter).then(function(geojson){
+                    overpassAPI.overpassToGeoJSON(query, filter).then(function(geojson){
                         $scope.geojsonShop = geojson;
                         leafletService.addGeoJSONLayer('shop', geojson, options);
                         $scope.shop = true;
@@ -124,8 +124,8 @@ angular.module('osm.controllers').controller('MainRelationController',
             if ($scope.building){
                 leafletService.hideLayer('building');
                 $scope.building = false;
-                if ($scope.currentNode && $scope.currentNode.geometry.type === 'Polygon'){
-                    $scope.currentNode = undefined;
+                if ($scope.currentElement && $scope.currentElement.geometry.type === 'Polygon'){
+                    $scope.currentElement = undefined;
                 }
             }else{
                 leafletService.getBBox().then(function(bbox){
@@ -139,7 +139,13 @@ angular.module('osm.controllers').controller('MainRelationController',
                     query += '<recurse type="down"/>';
                     query += '<print mode="skeleton" order="quadtile"/>';
                     query += '</osm-script>';
-                    osmService.overpassToGeoJSON(query, filter).then(function(geojson){
+                    overpassAPI.overpassToGeoJSON(query, filter).then(function(geojson){
+                        var feature;
+                        for (var i = 0; i < geojson.features.length; i++) {
+                            feature = geojson.features[i];
+                            feature.geometry.type = 'Polygon';
+                            feature.geometry.coordinates = [feature.geometry.coordinates];
+                        }
                         $scope.geojsonBuilding = geojson;
                         $scope.building = true;
                         leafletService.addGeoJSONLayer('building', geojson, options);

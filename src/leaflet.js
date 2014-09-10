@@ -3,8 +3,8 @@
 /*global L:false */
 L.Icon.Default.imagePath = 'images/';
 
-angular.module('osm.services').factory('leafletService',
-    ['$q', 'leafletData', 'osmService', function($q, leafletData, osmService){
+angular.module('osmMobileTagIt.services').factory('leafletService',
+    ['$q', 'leafletData', function($q, leafletData){
         return {
             center: {lat: 47.2150, lng: -1.5551, zoom: 19},//, autoDiscover: true},
             geojson: undefined,
@@ -71,9 +71,9 @@ angular.module('osm.services').factory('leafletService',
     }]
 );
 
-angular.module('osm.controllers').controller('LeafletController',
-    ['$scope', '$q', 'leafletService', 'osmService', 'settingsService',
-    function($scope, $q, leafletService, osmService, settingsService){
+angular.module('osmMobileTagIt.controllers').controller('LeafletController',
+    ['$scope', '$q', 'leafletService', 'overpassAPI', 'settingsService',
+    function($scope, $q, leafletService, overpassAPI, settingsService){
         $scope.settings = settingsService.settings;
         $scope.center = leafletService.center;
         $scope.zoomLevel = leafletService.center.zoom;
@@ -95,7 +95,7 @@ angular.module('osm.controllers').controller('LeafletController',
             var onError = function(error){
                 deferred.reject(error);
             };
-            osmService.overpassToGeoJSON(query, filter).then(function(geojson){
+            overpassAPI.overpassToGeoJSON(query, filter).then(function(geojson){
                 leafletService.getMap().then(function(map){
                     if ($scope.overpassLayer !== undefined){
                         map.removeLayer($scope.overpassLayer);
@@ -115,10 +115,10 @@ angular.module('osm.controllers').controller('LeafletController',
             leafletService.displayLayer(uri);
         };
         $scope.updateLocationMarker = function(lat, lng){
-            if (typeof(lat) !== "number"){
+            if (typeof(lat) !== 'number'){
                 lat = parseFloat(lat);
             }
-            if (typeof(lng) !== "number"){
+            if (typeof(lng) !== 'number'){
                 lng = parseFloat(lng);
             }
             if ($scope.markers.location === undefined){
