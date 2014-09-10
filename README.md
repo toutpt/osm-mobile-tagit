@@ -5,7 +5,7 @@ This tools has been created to help people to contribute with their smartphone.
 
 You can use it here:
 
-http://makinacorpus.github.io/osm-mobile-tagit
+http://toutpt.github.io/osm-mobile-tagit
 
 Technologies
 ============
