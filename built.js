@@ -588,10 +588,11 @@ angular.module('osmMobileTagIt.controllers').controller('TagsTableController',
         };
         $scope.addTagValue = function(k, v){
             $scope.tags[k] = v;
-            tagsService.get(k).then(cacheTagValues);
+            /*tagsService.get(k).then(function(values){
+                $scope.tagValues[k] = values;
+            });*/
         };
         $scope.loadTagValues = function(tags){
-            debugger;
             for (var k in tags) {
                 if ($scope.tagValues[k] === undefined && k.indexOf(':')===-1 && k!== 'source' && k!== 'name'){
                     console.log('load tags for ' +k);
