@@ -162,7 +162,8 @@ angular.module('osmMobileTagIt.controllers').controller('LeafletController',
                 $scope.markers.location = {
                     lat: lat,
                     lng: lng,
-                    message: 'My Position'
+                    message: 'My Position',
+                    tags:{}
                 };
             }else{
                 $scope.markers.location.lat = lat;
@@ -196,7 +197,8 @@ angular.module('osmMobileTagIt.controllers').controller('LeafletController',
                 $scope.markers.newNode = {
                     lat: $scope.center.lat,
                     lng: $scope.center.lng,
-                    message: 'Center'
+                    message: 'Center',
+                    tags:{}
                 };
             }else{
                 delete $scope.markers.newNode;
@@ -274,16 +276,15 @@ angular.module('osmMobileTagIt.controllers').controller('LoginController',
 angular.module('osmMobileTagIt').config(['$routeProvider', function($routeProvider) {
     $routeProvider.when('/', {
         templateUrl: 'partials/main.html',
-        controller: 'MainRelationController'
+        controller: 'MainController'
     });
     $routeProvider.otherwise({redirectTo: '/'});
 }]);
 
-angular.module('osmMobileTagIt.controllers').controller('MainRelationController',
+angular.module('osmMobileTagIt.controllers').controller('MainController',
 	['$scope', '$routeParams', 'settingsService', 'overpassAPI', 'leafletService',
 	function($scope, $routeParams, settingsService, overpassAPI, leafletService){
         $scope.settings = settingsService.settings;
-        $scope.relationID = $routeParams.mainRelationId;
         $scope.members = [];
         $scope.loading = {};
 
@@ -315,11 +316,27 @@ angular.module('osmMobileTagIt.controllers').controller('MainRelationController'
         };
         $scope.toggleAmenityAndShopLayer = function(){
             var query = '';
-            if ($scope.amenity && $scope.shop && $scope.currentElement){
+            if ($scope.amenity && $scope.currentElement){
                 if ($scope.currentElement.geometry.type === 'Point'){
                     $scope.currentElement = undefined;
                 }
             }
+            /* get all nodes that do not belongs to any way
+                <osm-script output="json">
+                  <query type="way">
+                    <bbox-query {{bbox}}/>
+                  </query>
+                  <recurse type="way-node" into="waynodes"/>
+                  <query type="node" into="allnodes">
+                    <bbox-query {{bbox}}/>
+                  </query>
+                  <difference>
+                    <item set="allnodes"/>
+                    <item set="waynodes"/>
+                  </difference>
+                  <print/>
+                </osm-script>
+                */
             if ($scope.amenity){
                 leafletService.hideLayer('amenity');
                 $scope.amenity = false;
@@ -327,63 +344,23 @@ angular.module('osmMobileTagIt.controllers').controller('MainRelationController'
                 leafletService.getBBox().then(function(bbox){
                     query = '<?xml version="1.0" encoding="UTF-8"?>';
                     query += '<osm-script output="json" timeout="10">';
-                    query += '<union>';
-                    query += '<query type="node">';
-                    query += '  <has-kv k="amenity"/>';
-                    query += '  <bbox-query ' + bbox + '/>';
-                    query += '</query>';
                     query += '<query type="way">';
-                    query += '  <has-kv k="amenity"/>';
                     query += '  <bbox-query ' + bbox + '/>';
                     query += '</query>';
-                    query += '<query type="relation">';
-                    query += '  <has-kv k="amenity"/>';
+                    query += '<recurse type="way-node" into="waynodes"/>';
+                    query += '<query type="node" into="allnodes">';
                     query += '  <bbox-query ' + bbox + '/>';
                     query += '</query>';
-                    query += '</union>';
-                    query += '<print mode="body"/>';
-                    query += '<recurse type="down"/>';
-                    query += '<print mode="skeleton" order="quadtile"/>';
+                    query += '<difference>';
+                    query += '  <item set="allnodes"/>';
+                    query += '  <item set="waynodes"/>';
+                    query += '</difference>';
+                    query += '<print/>';
                     query += '</osm-script>';
                     overpassAPI.overpassToGeoJSON(query, filter).then(function(geojson){
                         $scope.geojsonAmenity = geojson;
                         leafletService.addGeoJSONLayer('amenity', geojson, options);
                         $scope.amenity = true;
-                    });
-                });
-            }
-            if ($scope.shop){
-                leafletService.hideLayer('shop');
-                $scope.shop = false;
-            }else{
-                leafletService.getBBox().then(function(bbox){
-                    query = '<?xml version="1.0" encoding="UTF-8"?>';
-                    query += '<osm-script output="json" timeout="10">';
-                    query += '<union>';
-                    query += '<query type="node">';
-                    query += '  <has-kv k="shop"/> ';
-                    query += '  <bbox-query ' + bbox + '/>';
-                    query += '</query>';
-                    query += '<query type="way">';
-                    query += '  <has-kv k="shop"/> ';
-                    query += '  <bbox-query ' + bbox + '/>';
-                    query += '</query>';
-                    query += '<query type="relation">';
-                    query += '  <has-kv k="shop"/> ';
-                    query += '  <bbox-query ' + bbox + '/>';
-                    query += '</query>';
-                    query += '</union>';
-                    query += '<print mode="body"/>';
-                    query += '<recurse type="down"/>';
-                    query += '<print mode="skeleton" order="quadtile"/>';
-                    query += '</osm-script>';
-                    overpassAPI.overpassToGeoJSON(query, filter).then(function(geojson){
-                        $scope.geojsonShop = geojson;
-                        leafletService.addGeoJSONLayer('shop', geojson, options);
-                        $scope.shop = true;
-                        if ($scope.amenity){
-                            $scope.loading.layer = false;
-                        }
                     });
                 });
             }
@@ -421,6 +398,7 @@ angular.module('osmMobileTagIt.controllers').controller('MainRelationController'
                 });
             }
         };
+        
         var initialize = function(){
             $scope.loggedin = $scope.settings.credentials;
         };
@@ -472,8 +450,13 @@ angular.module('osmMobileTagIt.controllers').controller('SaveController',
             $routeParams.mainRelationId;
         $scope.loading = {};
         $scope.loading.updateTags = {loading:false,ok:false,ko:false};
-        $scope.addNode = function(node){
+        $scope.addNode = function(){
             console.log('addNode');
+            osmAPI.createNode({
+                tags: $scope.markers.newNode.tags,
+                lng: $scope.markers.newNode.lng,
+                lat: $scope.markers.newNode.lat
+            });
         };
         $scope.updateTags = function(){
             $scope.loading.updateTags.loading = true;
@@ -557,10 +540,39 @@ angular.module('osmMobileTagIt').directive('tagsTable', function(){
         }
     };
 });
-
+angular.module('osmMobileTagIt.services').factory('tagsService',
+    ['$q', 'osmTagInfoAPI', function($q, osmTagInfoAPI){
+        return {
+            '_cached': {},
+            get: function(key){
+                var deferred = $q.defer();
+                var self = this;
+                if (self._cached[key] === undefined){
+                    osmTagInfoAPI.getKeyValues({
+                        //key=shop&lang=fr&sortname=count&sortorder=desc&page=1&rp=400&format=json_pretty
+                        key:key,
+                        lang:'fr',
+                        sortname:'count',
+                        sortorder:'desc',
+                        page:1,
+                        rp:400
+                    }).then(function(data){
+                        self._cached[key] = data.data;
+                        deferred.resolve(self._cached[key]);
+                    }, function(error){
+                        deferred.reject(error);
+                    });
+                }else{
+                    deferred.resolve(self._cached[key]);
+                }
+                return deferred.promise;
+            }
+        };
+    }]
+);
 angular.module('osmMobileTagIt.controllers').controller('TagsTableController',
-    ['$scope', 'settingsService',
-    function($scope, settingsService){
+    ['$scope', 'settingsService', 'tagsService',
+    function($scope, settingsService, tagsService){
         console.log('init TagsTableController');
         $scope.loggedin = settingsService.settings.credentials;
         $scope.newTagKey = '';
@@ -572,6 +584,34 @@ angular.module('osmMobileTagIt.controllers').controller('TagsTableController',
         };
         $scope.removeTag = function(key){
             delete $scope.tags[key];
+        };
+        tagsService.get('shop').then(function(shops){
+            $scope.shops = shops;
+        });
+        tagsService.get('amenity').then(function(amenities){
+            $scope.amenities = amenities;
+        });
+        $scope.addShopTag = function(tagValue){
+            $scope.tags.shop = tagValue;
+        };
+        $scope.addAmenityTag = function(tagValue){
+            $scope.tags.amenity = tagValue;
+        };
+    }]
+);
+angular.module('osmMobileTagIt.controllers').controller('TagsController',
+    ['$scope', 'tagsService', function($scope, tagsService){
+        tagsService.get('shop').then(function(shops){
+            $scope.shops = shops;
+        });
+        tagsService.get('amenity').then(function(amenities){
+            $scope.amenities = amenities;
+        });
+        $scope.addShopTag = function(element, tagValue){
+            element.properties.shop = tagValue;
+        };
+        $scope.addAmenityTag = function(element, tagValue){
+            element.properties.amenity = tagValue;
         };
     }]
 );
