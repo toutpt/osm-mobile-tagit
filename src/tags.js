@@ -27,7 +27,7 @@ angular.module('osmMobileTagIt.services').factory('tagsService',
                         sortname:'count',
                         sortorder:'desc',
                         page:1,
-                        rp:400
+                        rp:100
                     }).then(function(data){
                         self._cached[key] = data.data;
                         deferred.resolve(self._cached[key]);
@@ -49,6 +49,7 @@ angular.module('osmMobileTagIt.controllers').controller('TagsTableController',
         $scope.loggedin = settingsService.settings.credentials;
         $scope.newTagKey = '';
         $scope.newTagValue = '';
+        $scope.tagValues = {};
         $scope.addTag = function(){
             if ($scope.newTagKey && $scope.newTagValue){
                 $scope.tags[$scope.newTagKey] = $scope.newTagValue;
@@ -57,33 +58,20 @@ angular.module('osmMobileTagIt.controllers').controller('TagsTableController',
         $scope.removeTag = function(key){
             delete $scope.tags[key];
         };
-        tagsService.get('shop').then(function(shops){
-            $scope.shops = shops;
-        });
-        tagsService.get('amenity').then(function(amenities){
-            $scope.amenities = amenities;
-        });
-        $scope.addShopTag = function(tagValue){
-            $scope.tags.shop = tagValue;
+        $scope.addTagValue = function(k, v){
+            $scope.tags[k] = v;
+            tagsService.get(k).then(cacheTagValues);
         };
-        $scope.addAmenityTag = function(tagValue){
-            $scope.tags.amenity = tagValue;
-        };
-    }]
-);
-angular.module('osmMobileTagIt.controllers').controller('TagsController',
-    ['$scope', 'tagsService', function($scope, tagsService){
-        tagsService.get('shop').then(function(shops){
-            $scope.shops = shops;
-        });
-        tagsService.get('amenity').then(function(amenities){
-            $scope.amenities = amenities;
-        });
-        $scope.addShopTag = function(element, tagValue){
-            element.properties.shop = tagValue;
-        };
-        $scope.addAmenityTag = function(element, tagValue){
-            element.properties.amenity = tagValue;
+        $scope.loadTagValues = function(tags){
+            debugger;
+            for (var k in tags) {
+                if ($scope.tagValues[k] === undefined && k.indexOf(':')===-1 && k!== 'source' && k!== 'name'){
+                    console.log('load tags for ' +k);
+                    tagsService.get(k).then(function(values){
+                        $scope.tagValues[k] = values;
+                    });
+                }
+            }
         };
     }]
 );
