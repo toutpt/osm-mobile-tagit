@@ -125,7 +125,8 @@ angular.module('osmMobileTagIt.controllers').controller('LeafletController',
                 $scope.markers.location = {
                     lat: lat,
                     lng: lng,
-                    message: 'My Position'
+                    message: 'My Position',
+                    tags:{}
                 };
             }else{
                 $scope.markers.location.lat = lat;
@@ -159,7 +160,8 @@ angular.module('osmMobileTagIt.controllers').controller('LeafletController',
                 $scope.markers.newNode = {
                     lat: $scope.center.lat,
                     lng: $scope.center.lng,
-                    message: 'Center'
+                    message: 'Center',
+                    tags:{}
                 };
             }else{
                 delete $scope.markers.newNode;

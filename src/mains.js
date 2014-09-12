@@ -6,16 +6,15 @@
 angular.module('osmMobileTagIt').config(['$routeProvider', function($routeProvider) {
     $routeProvider.when('/', {
         templateUrl: 'partials/main.html',
-        controller: 'MainRelationController'
+        controller: 'MainController'
     });
     $routeProvider.otherwise({redirectTo: '/'});
 }]);
 
-angular.module('osmMobileTagIt.controllers').controller('MainRelationController',
+angular.module('osmMobileTagIt.controllers').controller('MainController',
 	['$scope', '$routeParams', 'settingsService', 'overpassAPI', 'leafletService',
 	function($scope, $routeParams, settingsService, overpassAPI, leafletService){
         $scope.settings = settingsService.settings;
-        $scope.relationID = $routeParams.mainRelationId;
         $scope.members = [];
         $scope.loading = {};
 
@@ -47,11 +46,27 @@ angular.module('osmMobileTagIt.controllers').controller('MainRelationController'
         };
         $scope.toggleAmenityAndShopLayer = function(){
             var query = '';
-            if ($scope.amenity && $scope.shop && $scope.currentElement){
+            if ($scope.amenity && $scope.currentElement){
                 if ($scope.currentElement.geometry.type === 'Point'){
                     $scope.currentElement = undefined;
                 }
             }
+            /* get all nodes that do not belongs to any way
+                <osm-script output="json">
+                  <query type="way">
+                    <bbox-query {{bbox}}/>
+                  </query>
+                  <recurse type="way-node" into="waynodes"/>
+                  <query type="node" into="allnodes">
+                    <bbox-query {{bbox}}/>
+                  </query>
+                  <difference>
+                    <item set="allnodes"/>
+                    <item set="waynodes"/>
+                  </difference>
+                  <print/>
+                </osm-script>
+                */
             if ($scope.amenity){
                 leafletService.hideLayer('amenity');
                 $scope.amenity = false;
@@ -59,63 +74,23 @@ angular.module('osmMobileTagIt.controllers').controller('MainRelationController'
                 leafletService.getBBox().then(function(bbox){
                     query = '<?xml version="1.0" encoding="UTF-8"?>';
                     query += '<osm-script output="json" timeout="10">';
-                    query += '<union>';
-                    query += '<query type="node">';
-                    query += '  <has-kv k="amenity"/>';
-                    query += '  <bbox-query ' + bbox + '/>';
-                    query += '</query>';
                     query += '<query type="way">';
-                    query += '  <has-kv k="amenity"/>';
                     query += '  <bbox-query ' + bbox + '/>';
                     query += '</query>';
-                    query += '<query type="relation">';
-                    query += '  <has-kv k="amenity"/>';
+                    query += '<recurse type="way-node" into="waynodes"/>';
+                    query += '<query type="node" into="allnodes">';
                     query += '  <bbox-query ' + bbox + '/>';
                     query += '</query>';
-                    query += '</union>';
-                    query += '<print mode="body"/>';
-                    query += '<recurse type="down"/>';
-                    query += '<print mode="skeleton" order="quadtile"/>';
+                    query += '<difference>';
+                    query += '  <item set="allnodes"/>';
+                    query += '  <item set="waynodes"/>';
+                    query += '</difference>';
+                    query += '<print/>';
                     query += '</osm-script>';
                     overpassAPI.overpassToGeoJSON(query, filter).then(function(geojson){
                         $scope.geojsonAmenity = geojson;
                         leafletService.addGeoJSONLayer('amenity', geojson, options);
                         $scope.amenity = true;
-                    });
-                });
-            }
-            if ($scope.shop){
-                leafletService.hideLayer('shop');
-                $scope.shop = false;
-            }else{
-                leafletService.getBBox().then(function(bbox){
-                    query = '<?xml version="1.0" encoding="UTF-8"?>';
-                    query += '<osm-script output="json" timeout="10">';
-                    query += '<union>';
-                    query += '<query type="node">';
-                    query += '  <has-kv k="shop"/> ';
-                    query += '  <bbox-query ' + bbox + '/>';
-                    query += '</query>';
-                    query += '<query type="way">';
-                    query += '  <has-kv k="shop"/> ';
-                    query += '  <bbox-query ' + bbox + '/>';
-                    query += '</query>';
-                    query += '<query type="relation">';
-                    query += '  <has-kv k="shop"/> ';
-                    query += '  <bbox-query ' + bbox + '/>';
-                    query += '</query>';
-                    query += '</union>';
-                    query += '<print mode="body"/>';
-                    query += '<recurse type="down"/>';
-                    query += '<print mode="skeleton" order="quadtile"/>';
-                    query += '</osm-script>';
-                    overpassAPI.overpassToGeoJSON(query, filter).then(function(geojson){
-                        $scope.geojsonShop = geojson;
-                        leafletService.addGeoJSONLayer('shop', geojson, options);
-                        $scope.shop = true;
-                        if ($scope.amenity){
-                            $scope.loading.layer = false;
-                        }
                     });
                 });
             }
@@ -153,6 +128,7 @@ angular.module('osmMobileTagIt.controllers').controller('MainRelationController'
                 });
             }
         };
+        
         var initialize = function(){
             $scope.loggedin = $scope.settings.credentials;
         };

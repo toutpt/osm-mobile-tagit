@@ -72,8 +72,8 @@ gulp.task('po', function () {
     }))
     .pipe(gulp.dest('static/translations'));
 });
-gulp.task('default', ['scripts', 'resources', 'styles']);
+gulp.task('default', ['scripts', 'resources', 'styles', 'lint']);
 gulp.task('watch', function () {
-  gulp.watch('src/*.js', ['scripts', 'styles', 'resources', 'lint']);
+  gulp.watch('src/*.js', ['default']);
   gulp.watch('src/*.css', ['styles', 'resources']);
 });

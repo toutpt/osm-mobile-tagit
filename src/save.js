@@ -42,8 +42,13 @@ angular.module('osmMobileTagIt.controllers').controller('SaveController',
             $routeParams.mainRelationId;
         $scope.loading = {};
         $scope.loading.updateTags = {loading:false,ok:false,ko:false};
-        $scope.addNode = function(node){
+        $scope.addNode = function(){
             console.log('addNode');
+            osmAPI.createNode({
+                tags: $scope.markers.newNode.tags,
+                lng: $scope.markers.newNode.lng,
+                lat: $scope.markers.newNode.lat
+            });
         };
         $scope.updateTags = function(){
             $scope.loading.updateTags.loading = true;
