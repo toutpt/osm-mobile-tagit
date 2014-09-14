@@ -21,7 +21,7 @@ angular.module('osmMobileTagIt.controllers').controller('MainController',
         console.log('init MainController');
         $scope.settings = settingsService.settings;
         $scope.members = [];
-        $scope.loading = {};
+        $scope.loading = {data:{loading:false, ok:false,ko:false}};
 
         var pointToLayer = function (feature, latlng) {
             return L.marker(latlng);
@@ -85,6 +85,9 @@ angular.module('osmMobileTagIt.controllers').controller('MainController',
         };
         var getOSMData = function(){
             var deferred = $q.defer();
+            $scope.loading.data.loading = true;
+            $scope.loading.data.ok = false;
+            $scope.loading.data.ko = false;
             leafletService.getBBox('osmAPI').then(function(bbox){
                 osmAPI.getMapGeoJSON(bbox).then(function(geojson){
                     var nodes = [];
@@ -101,15 +104,24 @@ angular.module('osmMobileTagIt.controllers').controller('MainController',
                             areas.push(feature);
                         }
                     }
+                    $scope.loading.data.loading = false;
+                    $scope.loading.data.ok = true;
+                    $scope.loading.data.ko = false;
                     deferred.resolve({
                         nodes:nodes,
                         ways:ways,
                         areas: areas
                     });
                 },function(error){
+                    $scope.loading.data.loading = false;
+                    $scope.loading.data.ok = false;
+                    $scope.loading.data.ko = true;
                     deferred.reject(error);
                 });
             },function(error){
+                $scope.loading.data.loading = false;
+                $scope.loading.data.ok = false;
+                $scope.loading.data.ko = true;
                 deferred.reject(error);
             });
             return deferred.promise;

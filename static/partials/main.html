@@ -3,20 +3,22 @@
         <div>
           <div ng-controller="LeafletController">
             <leaflet center="center" markers="markers" layers="layers" width="100%" height="300" geojson="leafletGeojson"></leaflet>
+            <accordion>
+              <accordion-group heading="Tags">
             <div class="panel panel-default ng-hide" ng-show="loggedin">
               <div class="panel-heading">
                 <div class="btn-group">
-                  <a class="btn" ng-class="{'btn-default': !(poi && shop), 'btn-primary': poi}" ng-disabled="zoomLevel < 19" ng-click="togglePOILayer()">
+                  <a class="btn" ng-class="{'btn-default': !(poi && shop), 'btn-primary': poi}" ng-disabled="zoomLevel < 18" ng-click="togglePOILayer()">
                     <i class="fa fa-map-marker"></i>
                     <i class="fa fa-refresh fa-spin ng-hide" ng-show="loading.layer"></i>
                   </a>
-                  <a class="btn" ng-class="{'btn-default': !building, 'btn-primary': building}" ng-disabled="zoomLevel < 19" ng-click="toggleBuildingLayer()">
+                  <a class="btn" ng-class="{'btn-default': !building, 'btn-primary': building}" ng-disabled="zoomLevel < 18" ng-click="toggleBuildingLayer()">
                     <i class="fa fa-cube"></i>
                   </a>
-                  <a class="btn" ng-class="{'btn-default': !ways, 'btn-primary': ways}" ng-disabled="zoomLevel < 19" ng-click="toggleWaysLayer()">
+                  <a class="btn" ng-class="{'btn-default': !ways, 'btn-primary': ways}" ng-disabled="zoomLevel < 18" ng-click="toggleWaysLayer()">
                     <i class="fa fa-road"></i>
                   </a>
-                  <a class="btn" ng-class="{'btn-default': !markers.newNode, 'btn-primary': markers.newNode}" ng-disabled="zoomLevel < 19" ng-click="toggleNewNode()">
+                  <a class="btn" ng-class="{'btn-default': !markers.newNode, 'btn-primary': markers.newNode}" ng-disabled="zoomLevel < 18" ng-click="toggleNewNode()">
                     <i class="fa fa-crosshairs"></i>
                   </a>
                   <a class="btn btn-default" ng-class="{'btn-danger': errorLocalisation, 'btn-primary': localised, 'default': errorLocalisation !== undefiend && !localised}" ng-disabled="disabledLocation" ng-click="updateLocation()">
@@ -24,7 +26,7 @@
                   </a>
                 </div>
                 <div class="alert alert-danger ng-hide" ng-show="errorLocalisation">{{errorLocalisation.message}}</div>
-                <div class="alert alert-warning ng-hide" ng-show="zoomLevel <= 18"><i class="fa fa-warning text-warning"></i> Zoom must be >= 19 to enable tools</div>
+                <div class="alert alert-warning ng-hide" ng-show="zoomLevel < 18"><i class="fa fa-warning text-warning"></i> Zoom must be >= 18 to enable tools</div>
               </div>
               <div class="panel-body ng-hide" ng-show="currentElement" ng-controller="SaveController">
                 <div tags-table tags="currentElement.properties.tags"></div>
@@ -47,6 +49,8 @@
 
               </div>
             </div>
+              </accordion-group>
+            </accordion>
           </div>
         </div>
     </div>

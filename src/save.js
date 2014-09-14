@@ -75,23 +75,33 @@ angular.module('osmMobileTagIt.controllers').controller('SaveController',
             }
             osmAPI.get(method)
                 .then(function(nodeDOM){
+                    console.log('dom before modification');
+                    console.log(osmAPI.serialiseXmlToString(nodeDOM));
                     var source = $scope.currentElement.properties;
                     if (source.tags){ //support for osm2geojson -> properties.tags, ...
                         source = source.tags;
                     }
-                    var target = nodeDOM.getElementsByTagName('tag');
-                    console.log(osmAPI.serialiseXmlToString(nodeDOM));
-                    var key, value;
-                    for (var i = 0; i < target.length; i++) {
-                        key = target[i].getAttribute('k');
+                    //remove all tags and re-create them from properties
+                    var parent = nodeDOM.getElementsByTagName(tagName)[0];
+                    while (nodeDOM.getElementsByTagName('tag')[0]){
+                        parent.removeChild(nodeDOM.getElementsByTagName('tag')[0]);
+                    }
+                    var tag, value;
+                    for (var key in source) {
                         value = source[key];
-                        target[i].setAttribute('v', value);
+                        tag = document.createElement('tag');
+                        tag.setAttribute('k', key);
+                        tag.setAttribute('v', value);
+                        parent.appendChild(tag);
                     }
                     var nodeElement = nodeDOM.getElementsByTagName(tagName)[0];
                     nodeElement.setAttribute('changeset', settings.getChangeset());
                     nodeElement.setAttribute('timestamp', new Date().toISOString());
                     nodeElement.setAttribute('user', settings.getUserName());
+                    nodeDOM.getElementsByTagName('osm')[0].setAttribute('generator', 'osm mobile tagit');
                     var content = osmAPI.serialiseXmlToString(nodeDOM);
+                    content = content.replace(new RegExp(' xmlns="http://www.w3.org/1999/xhtml"', 'g'), '');
+                    console.log('dom after modification (just before save');
                     console.log(content);
                     osmAPI.put(method, content)
                         .then(function(){
