@@ -8,12 +8,17 @@ angular.module('osmMobileTagIt').config(['$routeProvider', function($routeProvid
         templateUrl: 'partials/main.html',
         controller: 'MainController'
     });
+    $routeProvider.when('/:zoom/:lat/:lng', {
+        templateUrl: 'partials/main.html',
+        controller: 'MainController'
+    });
     $routeProvider.otherwise({redirectTo: '/'});
 }]);
 
 angular.module('osmMobileTagIt.controllers').controller('MainController',
-	['$scope', '$routeParams', 'settingsService', 'overpassAPI', 'leafletService',
-	function($scope, $routeParams, settingsService, overpassAPI, leafletService){
+	['$scope', '$q', '$routeParams', 'settingsService', 'osmAPI', 'overpassAPI', 'leafletService',
+	function($scope, $q, $routeParams, settingsService, osmAPI, overpassAPI, leafletService){
+        console.log('init MainController');
         $scope.settings = settingsService.settings;
         $scope.members = [];
         $scope.loading = {};
@@ -26,10 +31,10 @@ angular.module('osmMobileTagIt.controllers').controller('MainController',
             layer.on('click', function () {
                 $scope.currentElement = feature;
             });
-            if (feature.properties) {
+            if (feature.properties.tags) {
                 var html = '<ul>';
-                for (var propertyName in feature.properties) {
-                    html += '<li>'+ propertyName + ' : ' + feature.properties[propertyName] + '</li>';
+                for (var propertyName in feature.properties.tags) {
+                    html += '<li>'+ propertyName + ' : ' + feature.properties.tags[propertyName] + '</li>';
                 }
                 html += '</ul>';
                 layer.bindPopup(html);
@@ -39,37 +44,20 @@ angular.module('osmMobileTagIt.controllers').controller('MainController',
             pointToLayer: pointToLayer,
             onEachFeature: onEachFeature
         };
-        $scope.amenity = false;
-        $scope.shop = false;
+        $scope.poi = false;
         var filter = function(feature){
             return feature.properties === undefined;
         };
-        $scope.toggleAmenityAndShopLayer = function(){
+        $scope.togglePOILayerOverpass = function(){
             var query = '';
-            if ($scope.amenity && $scope.currentElement){
+            if ($scope.poi && $scope.currentElement){
                 if ($scope.currentElement.geometry.type === 'Point'){
                     $scope.currentElement = undefined;
                 }
             }
-            /* get all nodes that do not belongs to any way
-                <osm-script output="json">
-                  <query type="way">
-                    <bbox-query {{bbox}}/>
-                  </query>
-                  <recurse type="way-node" into="waynodes"/>
-                  <query type="node" into="allnodes">
-                    <bbox-query {{bbox}}/>
-                  </query>
-                  <difference>
-                    <item set="allnodes"/>
-                    <item set="waynodes"/>
-                  </difference>
-                  <print/>
-                </osm-script>
-                */
-            if ($scope.amenity){
-                leafletService.hideLayer('amenity');
-                $scope.amenity = false;
+            if ($scope.poi){
+                leafletService.hideLayer('poi');
+                $scope.poi = false;
             }else{
                 leafletService.getBBox().then(function(bbox){
                     query = '<?xml version="1.0" encoding="UTF-8"?>';
@@ -88,14 +76,101 @@ angular.module('osmMobileTagIt.controllers').controller('MainController',
                     query += '<print/>';
                     query += '</osm-script>';
                     overpassAPI.overpassToGeoJSON(query, filter).then(function(geojson){
-                        $scope.geojsonAmenity = geojson;
-                        leafletService.addGeoJSONLayer('amenity', geojson, options);
-                        $scope.amenity = true;
+                        $scope.geojsonPOI = geojson;
+                        leafletService.addGeoJSONLayer('poi', geojson, options);
+                        $scope.poi = true;
                     });
                 });
             }
         };
+        var getOSMData = function(){
+            var deferred = $q.defer();
+            leafletService.getBBox('osmAPI').then(function(bbox){
+                osmAPI.getMapGeoJSON(bbox).then(function(geojson){
+                    var nodes = [];
+                    var ways = [];
+                    var areas = [];
+                    var feature;
+                    for (var i = 0; i < geojson.features.length; i++) {
+                        feature = geojson.features[i];
+                        if (feature.geometry.type === 'Point'){
+                            nodes.push(feature);
+                        }else if (feature.geometry.type === 'LineString'){
+                            ways.push(feature);
+                        }else if (feature.geometry.type === 'Polygon'){
+                            areas.push(feature);
+                        }
+                    }
+                    deferred.resolve({
+                        nodes:nodes,
+                        ways:ways,
+                        areas: areas
+                    });
+                },function(error){
+                    deferred.reject(error);
+                });
+            },function(error){
+                deferred.reject(error);
+            });
+            return deferred.promise;
+        };
+        $scope.togglePOILayer = function(){
+            if ($scope.poi && $scope.currentElement){
+                if ($scope.currentElement.geometry.type === 'Point'){
+                    $scope.currentElement = undefined;
+                }
+            }
+            if ($scope.poi){
+                leafletService.hideLayer('poi');
+                $scope.poi = false;
+            }else{
+                getOSMData().then(function(data){
+                    $scope.geojsonPOI = {
+                        type:'FeatureCollection',
+                        features: data.nodes
+                    };
+                    leafletService.addGeoJSONLayer('poi', $scope.geojsonPOI, options);
+                    $scope.poi = true;
+                });
+            }
+        };
         $scope.toggleBuildingLayer = function(){
+            if ($scope.building){
+                leafletService.hideLayer('building');
+                $scope.building = false;
+                if ($scope.currentElement && $scope.currentElement.geometry.type === 'Polygon'){
+                    $scope.currentElement = undefined;
+                }
+            }else{
+                getOSMData().then(function(data){
+                    $scope.geojsonBuilding = {
+                        type:'FeatureCollection',
+                        features: data.areas
+                    };
+                    leafletService.addGeoJSONLayer('building', $scope.geojsonBuilding, options);
+                    $scope.building = true;
+                });
+            }
+        };
+        $scope.toggleWaysLayer = function(){
+            if ($scope.ways){
+                leafletService.hideLayer('ways');
+                $scope.ways = false;
+                if ($scope.currentElement && $scope.currentElement.geometry.type === 'Polygon'){
+                    $scope.currentElement = undefined;
+                }
+            }else{
+                getOSMData().then(function(data){
+                    $scope.geojsonWays = {
+                        type:'FeatureCollection',
+                        features: data.ways
+                    };
+                    leafletService.addGeoJSONLayer('ways', $scope.geojsonWays, options);
+                    $scope.ways = true;
+                });
+            }
+        };
+        $scope.toggleBuildingLayerOverpass = function(){
             if ($scope.building){
                 leafletService.hideLayer('building');
                 $scope.building = false;
@@ -128,9 +203,13 @@ angular.module('osmMobileTagIt.controllers').controller('MainController',
                 });
             }
         };
-        
         var initialize = function(){
             $scope.loggedin = $scope.settings.credentials;
+            if ($routeParams.zoom !== undefined){
+                leafletService.center.lat = parseFloat($routeParams.lat);
+                leafletService.center.lng = parseFloat($routeParams.lng);
+                leafletService.center.zoom = parseInt($routeParams.zoom, 10);
+            }
         };
         initialize();
 	}]

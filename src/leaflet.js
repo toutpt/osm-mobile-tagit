@@ -55,14 +55,19 @@ angular.module('osmMobileTagIt.services').factory('leafletService',
                     }
                 });
             },
-            getBBox: function(){
+            getBBox: function(format){
                 var self = this;
                 var deferred = $q.defer();
                 self.getMap().then(function(map){
                     var b = map.getBounds();
-                    //var bbox = '' + b.getWest() + ',' + b.getSouth() + ',' + b.getEast() + ',' + b.getNorth();
-                    // s="47.1166" n="47.310" w="-1.7523" e="-1.3718
-                    var bbox = 'w="' + b.getWest() + '" s="' + b.getSouth() + '" e="' + b.getEast() + '" n="' + b.getNorth() + '"';
+                    var bbox;
+                    if (format === 'osmAPI'){
+                        //bbox=left,bottom,right,top
+                        bbox = '' + b.getWest() + ',' + b.getSouth() + ',' + b.getEast() + ',' + b.getNorth();
+                    }else{
+                        // s="47.1166" n="47.310" w="-1.7523" e="-1.3718
+                        bbox = 'w="' + b.getWest() + '" s="' + b.getSouth() + '" e="' + b.getEast() + '" n="' + b.getNorth() + '"';
+                    }
                     deferred.resolve(bbox);
                 });
                 return deferred.promise;
@@ -72,8 +77,9 @@ angular.module('osmMobileTagIt.services').factory('leafletService',
 );
 
 angular.module('osmMobileTagIt.controllers').controller('LeafletController',
-    ['$scope', '$q', 'leafletService', 'overpassAPI', 'settingsService',
-    function($scope, $q, leafletService, overpassAPI, settingsService){
+    ['$scope', '$location', '$q', 'leafletService', 'overpassAPI', 'settingsService',
+    function($scope, $location, $q, leafletService, overpassAPI, settingsService){
+        console.log('init LeafletController');
         $scope.settings = settingsService.settings;
         $scope.center = leafletService.center;
         $scope.zoomLevel = leafletService.center.zoom;
@@ -90,7 +96,7 @@ angular.module('osmMobileTagIt.controllers').controller('LeafletController',
             shadowAnchor: [4, 30],  // the same for the shadow
             popupAnchor:  [-3, -20] // point from which the popup should open relative to the iconAnchor
         });
-        $scope.overpassToLayer = function(query, filter){
+/*        $scope.overpassToLayer = function(query, filter){
             var deferred = $q.defer();
             var onError = function(error){
                 deferred.reject(error);
@@ -106,7 +112,7 @@ angular.module('osmMobileTagIt.controllers').controller('LeafletController',
                 }, onError);
             });
             return deferred.promise;
-        };
+        };*/
         $scope.hideGeoJSON = function(uri){
             leafletService.hideLayer(uri);
         };
@@ -182,6 +188,11 @@ angular.module('osmMobileTagIt.controllers').controller('LeafletController',
             if (newValue === oldValue){
                 return;
             }
+            var url = '/'+newValue.zoom.toString();
+            url += '/'+newValue.lat.toString();
+            url += '/'+newValue.lng.toString();
+//            $location.path(url);
+//            FIXME: use ui-router state for that, because angular reload the view
             if ($scope.markers.newNode === undefined){
                 return;
             }

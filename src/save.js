@@ -59,15 +59,26 @@ angular.module('osmMobileTagIt.controllers').controller('SaveController',
             var geometry = $scope.currentElement.geometry.type;
             var method, tagName;
             if (geometry === 'Point'){
-                method = '/0.6/node/'+$scope.currentElement.id;
+                if ($scope.currentElement.id.indexOf('node') === -1){
+                    method = '/0.6/node/' + $scope.currentElement.id;
+                }else{
+                    method = '/0.6/' + $scope.currentElement.id;
+                }
                 tagName = 'node';
             }else if (geometry === 'Polygon' || geometry === 'LineString'){
-                method = '/0.6/way/'+$scope.currentElement.id;
+                if ($scope.currentElement.id.indexOf('way') === -1){
+                    method = '/0.6/way/' + $scope.currentElement.id;
+                }else{
+                    method = '/0.6/' + $scope.currentElement.id;
+                }
                 tagName = 'way';
             }
             osmAPI.get(method)
                 .then(function(nodeDOM){
                     var source = $scope.currentElement.properties;
+                    if (source.tags){ //support for osm2geojson -> properties.tags, ...
+                        source = source.tags;
+                    }
                     var target = nodeDOM.getElementsByTagName('tag');
                     console.log(osmAPI.serialiseXmlToString(nodeDOM));
                     var key, value;
