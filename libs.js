@@ -451,10 +451,6 @@ angular.module('osm.services').factory('osmAPI',
                 });
                 return deferred.promise;
             },
-            getNodesInJSON: function(xmlNodes){
-                osmSettingsService.setNodes(xmlNodes);
-                return osmtogeojson(xmlNodes, {flatProperties: true});
-            },
             createChangeset: function(comment){
                 var deferred = $q.defer();
                 var changeset = '<osm><changeset><tag k="created_by" v="OSM-Relation-Editor"/><tag k="comment" v="';
@@ -860,6 +856,14 @@ angular.module('osm.services').factory('osmAPI',
                     console.error('can t sort this relation');
                 }
             },
+            getNodesInJSON: function(xmlNodes, flatProperties){
+                osmSettingsService.setNodes(xmlNodes);
+                var options = {};
+                if (flatProperties !== undefined){
+                    options.flatProperties = flatProperties;
+                }
+                return osmtogeojson(xmlNodes, options);
+            },
             yqlJSON: function(featuresURL){
                 var deferred = $q.defer();
                 var url, config;
@@ -1079,7 +1083,7 @@ angular.module('osm.services').factory('osmSettingsService',
                 return this.localStorage.nodes;
             },
             setNodes: function(nodes){
-                this.localStorage.setNodes(nodes);
+                this.localStorage.nodes = nodes;
             },
             getChangeset: function(){
                 return this.localStorage.changeset;

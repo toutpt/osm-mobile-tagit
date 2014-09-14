@@ -10,12 +10,6 @@
   <div id="wrapper">
     <div id="page-wrapper" class="container-fluid">
       <div class="row">
-        <div class="col-xs-12">
-          <div class="ng-hide" ng-show="loggedin" ng-controller="ChangesetController">
-            <button class="btn btn-default ng-hide" ng-show="!settings.changesetID" ng-click="createChangeset()">Create change set</button>
-            <button class="btn btn-primary ng-hide" ng-show="settings.changesetID" ng-click="closeChangeset()">Save (close changeset {{settings.changesetID}})</button>
-          </div>
-        </div>
         <div class="col-xs-12" ng-controller="LoginController">
           <div class="form-group ng-hide" ng-show="!loggedin">
             <div class="input-group">
@@ -33,6 +27,10 @@
             <button class="form-control btn btn-danger" ng-click="logout()">Logout</button>
           </div>
         </div>
+      </div>
+
+      <div ng-view></div>
+      <div class="row">
         <div class="col-xs-12" ng-controller="ChangesetController">
           <div class="form-group  ng-hide" ng-show="!changesetID">
             <button class="form-control btn btn-default" ng-click="createChangeset()">Create change set</button>
@@ -42,8 +40,6 @@
           </div>
         </div>
       </div>
-
-      <div ng-view></div>
     </div>
   </div>
   <script src="libs.js"></script>

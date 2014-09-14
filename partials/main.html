@@ -6,12 +6,15 @@
             <div class="panel panel-default ng-hide" ng-show="loggedin">
               <div class="panel-heading">
                 <div class="btn-group">
-                  <a class="btn" ng-class="{'btn-default': !(amenity && shop), 'btn-primary': amenity || shop}" ng-disabled="zoomLevel < 19" ng-click="toggleAmenityAndShopLayer()">
+                  <a class="btn" ng-class="{'btn-default': !(poi && shop), 'btn-primary': poi}" ng-disabled="zoomLevel < 19" ng-click="togglePOILayer()">
                     <i class="fa fa-map-marker"></i>
                     <i class="fa fa-refresh fa-spin ng-hide" ng-show="loading.layer"></i>
                   </a>
                   <a class="btn" ng-class="{'btn-default': !building, 'btn-primary': building}" ng-disabled="zoomLevel < 19" ng-click="toggleBuildingLayer()">
                     <i class="fa fa-cube"></i>
+                  </a>
+                  <a class="btn" ng-class="{'btn-default': !ways, 'btn-primary': ways}" ng-disabled="zoomLevel < 19" ng-click="toggleWaysLayer()">
+                    <i class="fa fa-road"></i>
                   </a>
                   <a class="btn" ng-class="{'btn-default': !markers.newNode, 'btn-primary': markers.newNode}" ng-disabled="zoomLevel < 19" ng-click="toggleNewNode()">
                     <i class="fa fa-crosshairs"></i>
@@ -24,7 +27,7 @@
                 <div class="alert alert-warning ng-hide" ng-show="zoomLevel <= 18"><i class="fa fa-warning text-warning"></i> Zoom must be >= 19 to enable tools</div>
               </div>
               <div class="panel-body ng-hide" ng-show="currentElement" ng-controller="SaveController">
-                <div tags-table tags="currentElement.properties"></div>
+                <div tags-table tags="currentElement.properties.tags"></div>
                 <alert type="'danger'" class="ng-hide" ng-show="loading.updateTags.msg">
                   HTTP status : {{loading.updateTags.msg.status}}. Message : {{loading.updateTags.msg.data}}
                 </alert>

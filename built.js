@@ -92,14 +92,19 @@ angular.module('osmMobileTagIt.services').factory('leafletService',
                     }
                 });
             },
-            getBBox: function(){
+            getBBox: function(format){
                 var self = this;
                 var deferred = $q.defer();
                 self.getMap().then(function(map){
                     var b = map.getBounds();
-                    //var bbox = '' + b.getWest() + ',' + b.getSouth() + ',' + b.getEast() + ',' + b.getNorth();
-                    // s="47.1166" n="47.310" w="-1.7523" e="-1.3718
-                    var bbox = 'w="' + b.getWest() + '" s="' + b.getSouth() + '" e="' + b.getEast() + '" n="' + b.getNorth() + '"';
+                    var bbox;
+                    if (format === 'osmAPI'){
+                        //bbox=left,bottom,right,top
+                        bbox = '' + b.getWest() + ',' + b.getSouth() + ',' + b.getEast() + ',' + b.getNorth();
+                    }else{
+                        // s="47.1166" n="47.310" w="-1.7523" e="-1.3718
+                        bbox = 'w="' + b.getWest() + '" s="' + b.getSouth() + '" e="' + b.getEast() + '" n="' + b.getNorth() + '"';
+                    }
                     deferred.resolve(bbox);
                 });
                 return deferred.promise;
@@ -109,8 +114,9 @@ angular.module('osmMobileTagIt.services').factory('leafletService',
 );
 
 angular.module('osmMobileTagIt.controllers').controller('LeafletController',
-    ['$scope', '$q', 'leafletService', 'overpassAPI', 'settingsService',
-    function($scope, $q, leafletService, overpassAPI, settingsService){
+    ['$scope', '$location', '$q', 'leafletService', 'overpassAPI', 'settingsService',
+    function($scope, $location, $q, leafletService, overpassAPI, settingsService){
+        console.log('init LeafletController');
         $scope.settings = settingsService.settings;
         $scope.center = leafletService.center;
         $scope.zoomLevel = leafletService.center.zoom;
@@ -127,7 +133,7 @@ angular.module('osmMobileTagIt.controllers').controller('LeafletController',
             shadowAnchor: [4, 30],  // the same for the shadow
             popupAnchor:  [-3, -20] // point from which the popup should open relative to the iconAnchor
         });
-        $scope.overpassToLayer = function(query, filter){
+/*        $scope.overpassToLayer = function(query, filter){
             var deferred = $q.defer();
             var onError = function(error){
                 deferred.reject(error);
@@ -143,7 +149,7 @@ angular.module('osmMobileTagIt.controllers').controller('LeafletController',
                 }, onError);
             });
             return deferred.promise;
-        };
+        };*/
         $scope.hideGeoJSON = function(uri){
             leafletService.hideLayer(uri);
         };
@@ -219,6 +225,11 @@ angular.module('osmMobileTagIt.controllers').controller('LeafletController',
             if (newValue === oldValue){
                 return;
             }
+            var url = '/'+newValue.zoom.toString();
+            url += '/'+newValue.lat.toString();
+            url += '/'+newValue.lng.toString();
+//            $location.path(url);
+//            FIXME: use ui-router state for that, because angular reload the view
             if ($scope.markers.newNode === undefined){
                 return;
             }
@@ -278,12 +289,17 @@ angular.module('osmMobileTagIt').config(['$routeProvider', function($routeProvid
         templateUrl: 'partials/main.html',
         controller: 'MainController'
     });
+    $routeProvider.when('/:zoom/:lat/:lng', {
+        templateUrl: 'partials/main.html',
+        controller: 'MainController'
+    });
     $routeProvider.otherwise({redirectTo: '/'});
 }]);
 
 angular.module('osmMobileTagIt.controllers').controller('MainController',
-	['$scope', '$routeParams', 'settingsService', 'overpassAPI', 'leafletService',
-	function($scope, $routeParams, settingsService, overpassAPI, leafletService){
+	['$scope', '$q', '$routeParams', 'settingsService', 'osmAPI', 'overpassAPI', 'leafletService',
+	function($scope, $q, $routeParams, settingsService, osmAPI, overpassAPI, leafletService){
+        console.log('init MainController');
         $scope.settings = settingsService.settings;
         $scope.members = [];
         $scope.loading = {};
@@ -296,10 +312,10 @@ angular.module('osmMobileTagIt.controllers').controller('MainController',
             layer.on('click', function () {
                 $scope.currentElement = feature;
             });
-            if (feature.properties) {
+            if (feature.properties.tags) {
                 var html = '<ul>';
-                for (var propertyName in feature.properties) {
-                    html += '<li>'+ propertyName + ' : ' + feature.properties[propertyName] + '</li>';
+                for (var propertyName in feature.properties.tags) {
+                    html += '<li>'+ propertyName + ' : ' + feature.properties.tags[propertyName] + '</li>';
                 }
                 html += '</ul>';
                 layer.bindPopup(html);
@@ -309,37 +325,20 @@ angular.module('osmMobileTagIt.controllers').controller('MainController',
             pointToLayer: pointToLayer,
             onEachFeature: onEachFeature
         };
-        $scope.amenity = false;
-        $scope.shop = false;
+        $scope.poi = false;
         var filter = function(feature){
             return feature.properties === undefined;
         };
-        $scope.toggleAmenityAndShopLayer = function(){
+        $scope.togglePOILayerOverpass = function(){
             var query = '';
-            if ($scope.amenity && $scope.currentElement){
+            if ($scope.poi && $scope.currentElement){
                 if ($scope.currentElement.geometry.type === 'Point'){
                     $scope.currentElement = undefined;
                 }
             }
-            /* get all nodes that do not belongs to any way
-                <osm-script output="json">
-                  <query type="way">
-                    <bbox-query {{bbox}}/>
-                  </query>
-                  <recurse type="way-node" into="waynodes"/>
-                  <query type="node" into="allnodes">
-                    <bbox-query {{bbox}}/>
-                  </query>
-                  <difference>
-                    <item set="allnodes"/>
-                    <item set="waynodes"/>
-                  </difference>
-                  <print/>
-                </osm-script>
-                */
-            if ($scope.amenity){
-                leafletService.hideLayer('amenity');
-                $scope.amenity = false;
+            if ($scope.poi){
+                leafletService.hideLayer('poi');
+                $scope.poi = false;
             }else{
                 leafletService.getBBox().then(function(bbox){
                     query = '<?xml version="1.0" encoding="UTF-8"?>';
@@ -358,14 +357,101 @@ angular.module('osmMobileTagIt.controllers').controller('MainController',
                     query += '<print/>';
                     query += '</osm-script>';
                     overpassAPI.overpassToGeoJSON(query, filter).then(function(geojson){
-                        $scope.geojsonAmenity = geojson;
-                        leafletService.addGeoJSONLayer('amenity', geojson, options);
-                        $scope.amenity = true;
+                        $scope.geojsonPOI = geojson;
+                        leafletService.addGeoJSONLayer('poi', geojson, options);
+                        $scope.poi = true;
                     });
                 });
             }
         };
+        var getOSMData = function(){
+            var deferred = $q.defer();
+            leafletService.getBBox('osmAPI').then(function(bbox){
+                osmAPI.getMapGeoJSON(bbox).then(function(geojson){
+                    var nodes = [];
+                    var ways = [];
+                    var areas = [];
+                    var feature;
+                    for (var i = 0; i < geojson.features.length; i++) {
+                        feature = geojson.features[i];
+                        if (feature.geometry.type === 'Point'){
+                            nodes.push(feature);
+                        }else if (feature.geometry.type === 'LineString'){
+                            ways.push(feature);
+                        }else if (feature.geometry.type === 'Polygon'){
+                            areas.push(feature);
+                        }
+                    }
+                    deferred.resolve({
+                        nodes:nodes,
+                        ways:ways,
+                        areas: areas
+                    });
+                },function(error){
+                    deferred.reject(error);
+                });
+            },function(error){
+                deferred.reject(error);
+            });
+            return deferred.promise;
+        };
+        $scope.togglePOILayer = function(){
+            if ($scope.poi && $scope.currentElement){
+                if ($scope.currentElement.geometry.type === 'Point'){
+                    $scope.currentElement = undefined;
+                }
+            }
+            if ($scope.poi){
+                leafletService.hideLayer('poi');
+                $scope.poi = false;
+            }else{
+                getOSMData().then(function(data){
+                    $scope.geojsonPOI = {
+                        type:'FeatureCollection',
+                        features: data.nodes
+                    };
+                    leafletService.addGeoJSONLayer('poi', $scope.geojsonPOI, options);
+                    $scope.poi = true;
+                });
+            }
+        };
         $scope.toggleBuildingLayer = function(){
+            if ($scope.building){
+                leafletService.hideLayer('building');
+                $scope.building = false;
+                if ($scope.currentElement && $scope.currentElement.geometry.type === 'Polygon'){
+                    $scope.currentElement = undefined;
+                }
+            }else{
+                getOSMData().then(function(data){
+                    $scope.geojsonBuilding = {
+                        type:'FeatureCollection',
+                        features: data.areas
+                    };
+                    leafletService.addGeoJSONLayer('building', $scope.geojsonBuilding, options);
+                    $scope.building = true;
+                });
+            }
+        };
+        $scope.toggleWaysLayer = function(){
+            if ($scope.ways){
+                leafletService.hideLayer('ways');
+                $scope.ways = false;
+                if ($scope.currentElement && $scope.currentElement.geometry.type === 'Polygon'){
+                    $scope.currentElement = undefined;
+                }
+            }else{
+                getOSMData().then(function(data){
+                    $scope.geojsonWays = {
+                        type:'FeatureCollection',
+                        features: data.ways
+                    };
+                    leafletService.addGeoJSONLayer('ways', $scope.geojsonWays, options);
+                    $scope.ways = true;
+                });
+            }
+        };
+        $scope.toggleBuildingLayerOverpass = function(){
             if ($scope.building){
                 leafletService.hideLayer('building');
                 $scope.building = false;
@@ -398,9 +484,13 @@ angular.module('osmMobileTagIt.controllers').controller('MainController',
                 });
             }
         };
-        
         var initialize = function(){
             $scope.loggedin = $scope.settings.credentials;
+            if ($routeParams.zoom !== undefined){
+                leafletService.center.lat = parseFloat($routeParams.lat);
+                leafletService.center.lng = parseFloat($routeParams.lng);
+                leafletService.center.zoom = parseInt($routeParams.zoom, 10);
+            }
         };
         initialize();
 	}]
@@ -467,15 +557,26 @@ angular.module('osmMobileTagIt.controllers').controller('SaveController',
             var geometry = $scope.currentElement.geometry.type;
             var method, tagName;
             if (geometry === 'Point'){
-                method = '/0.6/node/'+$scope.currentElement.id;
+                if ($scope.currentElement.id.indexOf('node') === -1){
+                    method = '/0.6/node/' + $scope.currentElement.id;
+                }else{
+                    method = '/0.6/' + $scope.currentElement.id;
+                }
                 tagName = 'node';
             }else if (geometry === 'Polygon' || geometry === 'LineString'){
-                method = '/0.6/way/'+$scope.currentElement.id;
+                if ($scope.currentElement.id.indexOf('way') === -1){
+                    method = '/0.6/way/' + $scope.currentElement.id;
+                }else{
+                    method = '/0.6/' + $scope.currentElement.id;
+                }
                 tagName = 'way';
             }
             osmAPI.get(method)
                 .then(function(nodeDOM){
                     var source = $scope.currentElement.properties;
+                    if (source.tags){ //support for osm2geojson -> properties.tags, ...
+                        source = source.tags;
+                    }
                     var target = nodeDOM.getElementsByTagName('tag');
                     console.log(osmAPI.serialiseXmlToString(nodeDOM));
                     var key, value;
