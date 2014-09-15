@@ -134,8 +134,14 @@ angular.module('osmMobileTagIt.controllers').controller('TagsTableController',
                 });
             }
         };
-        tagsService.getKeysAll().then(function(data){
-            $scope.keys = data;
-        });
+        $scope.toggleKeysInfo = function(){
+            if ($scope.keys === undefined){
+                tagsService.getKeysAll().then(function(data){
+                    $scope.keys = data;
+                });
+            }else{
+                $scope.keys = undefined;
+            }
+        };
     }]
 );
