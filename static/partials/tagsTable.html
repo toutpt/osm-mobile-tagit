@@ -18,9 +18,9 @@
   </div>
   <div class="input-group ng-hide" ng-show="tagValues[k] !== undefined">
     <ul class="list-group">
-      <li class="list-group-item" ng-repeat="existingTagValue in tagValues[k]">
+      <li class="list-group-item" ng-repeat="existingTagValue in tagValues[k] |filter:v">
         <div class="btn-group" style="width:100%">
-            <button type="button" class="btn btn-default"style="width: 80%" ng-click="addTagValue(k, existingTagValue)">
+            <button type="button" class="btn btn-default"style="width: 80%" ng-click="addTagValue(k, existingTagValue.value)">
               {{existingTagValue.value}}
               <span class="label label-default">{{existingTagValue.count}}</span>
             </button>
@@ -33,12 +33,26 @@
   </div>
 </div>
 <div class="form-group ng-hide" ng-show="loggedin">
-	<input class="form-control" type="text" placeholder="key" ng-model="newTagKey"/>
-</div>
-<div class="form-group">
-	<input class="form-control" type="text" placeholder="value" ng-model="newTagValue"/>
-</div>
-<div class="form-group">
-	<button class="btn btn-default form-control" ng-click="addTag()"><i class="fa fa-plus-square-o"></i></button>
+  <div class="input-group">
+  	<input class="form-control" type="text" placeholder="key" ng-model="newTagKey"/>
+    <div class="input-group-btn">
+      <button class="btn btn-default" ng-click="addTagValue()"><i class="fa fa-plus-square-o"></i></button>
+    </div>
+  </div>
+  <div class="input-group ng-hide" ng-show="keys !== undefined && newTagKey">
+    <ul class="list-group">
+      <li class="list-group-item" ng-repeat="key in keys|filter:newTagKey">
+        <div class="btn-group">
+            <button type="button" class="btn btn-default" ng-click="addTagValue(key.key)">
+              {{key.key}}
+              <span class="label label-default">{{key.count_all}}</span>
+            </button>
+            <a class="btn btn-default" style="width: 20%" target="_blank" ng-href="{{'http://wiki.openstreetmap.org/wiki/FR:Key:'+key.key}}" ng-disabled="!key.in_wiki">
+              i
+            </a>
+        </div>
+      </li>
+    </ul>
+  </div>
 </div>
 </div>
