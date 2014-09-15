@@ -668,6 +668,27 @@ angular.module('osmMobileTagIt.services').factory('tagsService',
         return {
             '_cachedKeyValues': {},
             '_cachedKeyWikiPages': {},
+            '_cachedKeysAll': undefined,
+            getKeysAll: function(){
+                var deferred = $q.defer();
+                var self = this;
+                if (self._cachedKeysAll === undefined){
+                    osmTagInfoAPI.getKeysAll({
+                        sortname:'count_all',
+                        sortorder:'desc',
+                        page:1,
+                        rp:100
+                    }).then(function(data){
+                        self._cachedKeysAll = data.data;
+                        deferred.resolve(self._cachedKeysAll);
+                    }, function(error){
+                        deferred.reject(error);
+                    });
+                }else{
+                    deferred.resolve(self._cachedKeysAll);
+                }
+                return deferred.promise;
+            },
             getKeyValues: function(key){
                 var deferred = $q.defer();
                 var self = this;
@@ -718,22 +739,23 @@ angular.module('osmMobileTagIt.controllers').controller('TagsTableController',
         console.log('init TagsTableController');
         $scope.loggedin = settingsService.settings.credentials;
         $scope.newTagKey = '';
-        $scope.newTagValue = '';
         $scope.tagValues = {};
         $scope.tagWikiPages = {};
-        $scope.addTag = function(){
-            if ($scope.newTagKey && $scope.newTagValue){
-                $scope.tags[$scope.newTagKey] = $scope.newTagValue;
+        $scope.addTagValue = function(k, v){
+            if (k === undefined){
+                k = $scope.newTagKey;
+            }
+            if (k !== undefined){
+                if($scope.tags[k] === undefined){
+                    $scope.tags[k] = '';
+                    $scope.newTagKey = '';
+                }else if (v !== undefined){
+                    $scope.tags[k] = v;
+                }
             }
         };
         $scope.removeTag = function(key){
             delete $scope.tags[key];
-        };
-        $scope.addTagValue = function(k, v){
-            $scope.tags[k] = v;
-            /*tagsService.get(k).then(function(values){
-                $scope.tagValues[k] = values;
-            });*/
         };
         $scope.toggleTagInfo = function(k){
             if ($scope.tagWikiPages[k] !== undefined){
@@ -763,5 +785,8 @@ angular.module('osmMobileTagIt.controllers').controller('TagsTableController',
                 });
             }
         };
+        tagsService.getKeysAll().then(function(data){
+            $scope.keys = data;
+        });
     }]
 );
