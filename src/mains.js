@@ -6,18 +6,15 @@
 angular.module('osmMobileTagIt').config(['$routeProvider', function($routeProvider) {
     $routeProvider.when('/', {
         templateUrl: 'partials/main.html',
-        controller: 'MainController'
-    });
-    $routeProvider.when('/:zoom/:lat/:lng', {
-        templateUrl: 'partials/main.html',
-        controller: 'MainController'
+        controller: 'MainController',
+        reloadOnSearch: false
     });
     $routeProvider.otherwise({redirectTo: '/'});
 }]);
 
 angular.module('osmMobileTagIt.controllers').controller('MainController',
-	['$scope', '$q', '$routeParams', 'settingsService', 'osmAPI', 'overpassAPI', 'leafletService',
-	function($scope, $q, $routeParams, settingsService, osmAPI, overpassAPI, leafletService){
+	['$scope', '$q', '$location', 'settingsService', 'osmAPI', 'overpassAPI', 'leafletService',
+	function($scope, $q, $location, settingsService, osmAPI, overpassAPI, leafletService){
         console.log('init MainController');
         $scope.settings = settingsService.settings;
         $scope.members = [];
@@ -217,11 +214,6 @@ angular.module('osmMobileTagIt.controllers').controller('MainController',
         };
         var initialize = function(){
             $scope.loggedin = $scope.settings.credentials;
-            if ($routeParams.zoom !== undefined){
-                leafletService.center.lat = parseFloat($routeParams.lat);
-                leafletService.center.lng = parseFloat($routeParams.lng);
-                leafletService.center.zoom = parseInt($routeParams.zoom, 10);
-            }
         };
         initialize();
 	}]

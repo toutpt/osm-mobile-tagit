@@ -4,7 +4,7 @@
 L.Icon.Default.imagePath = 'images/';
 
 angular.module('osmMobileTagIt.services').factory('leafletService',
-    ['$q', 'leafletData', function($q, leafletData){
+    ['$q', 'leafletData', '$location', function($q, leafletData, $location){
         return {
             center: {lat: 47.2150, lng: -1.5551, zoom: 19},//, autoDiscover: true},
             geojson: undefined,
@@ -26,6 +26,23 @@ angular.module('osmMobileTagIt.services').factory('leafletService',
             markers: {},
             getMap: function(id){
                 return leafletData.getMap(id);
+            },
+            initMap: function () {
+                var self = this;
+                var s = $location.search();
+                if (s.zoom) {
+                    self.center.zoom = parseInt(s.zoom, 10);
+                }
+                if (s.lat && s.lng) {
+                    self.center.lat = parseFloat(s.lat);
+                    self.center.lng = parseFloat(s.lng);
+                }
+                return leafletData.getMap().then(function (map) {
+                    map.on('zoomend', function () {
+                        $location.search('zoom', self.center.zoom);
+                    });
+                    return map;
+                });
             },
             addGeoJSONLayer: function(id, geojson, options){
                 var self = this;
@@ -84,7 +101,6 @@ angular.module('osmMobileTagIt.controllers').controller('LeafletController',
         $scope.center = leafletService.center;
         $scope.zoomLevel = leafletService.center.zoom;
         $scope.layers = leafletService.layers;
-        $scope.geojson = leafletService.geojson;
         $scope.loading = {};
         $scope.markers = leafletService.markers;
         var idIcon = L.icon({
@@ -175,24 +191,18 @@ angular.module('osmMobileTagIt.controllers').controller('LeafletController',
         };
 
         //initialize
-        leafletService.getMap().then(function(map){
+        leafletService.initMap().then(function(map){
             $scope.map = map;
-            map.on('zoomend', function(){
-                $scope.zoomLevel = map.getZoom();
-            });
         });
         $scope.$watch('center', function(newValue, oldValue){
+            $location.search('lat', newValue.lat);
+            $location.search('lng', newValue.lng);
             if (oldValue === undefined){
                 return;
             }
             if (newValue === oldValue){
                 return;
             }
-            var url = '/'+newValue.zoom.toString();
-            url += '/'+newValue.lat.toString();
-            url += '/'+newValue.lng.toString();
-//            $location.path(url);
-//            FIXME: use ui-router state for that, because angular reload the view
             if ($scope.markers.newNode === undefined){
                 return;
             }
