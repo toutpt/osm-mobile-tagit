@@ -1,25 +1,14 @@
-/*jshint strict:false */
-/*global angular:false */
+import 'x2js';
+import angularOsm from 'angular-osm';
+import angularLeaflet from 'angular-leaflet-light';
+import angularUiBootstrap from 'angular-ui-bootstrap';
 
-'use strict';
+import oauth from './components/oauth/oauth';
+//import map from './map';
 
-// Declare app level module which depends on filters, and services
 angular.module('osmMobileTagIt', [
-    'ngRoute',
-    'base64',
-//    'flash',
-    'leaflet-directive',
-    'osm',
-    'osmMobileTagIt.services',
-    'osmMobileTagIt.directives',
-    'osmMobileTagIt.controllers',
-    'ui.bootstrap',
-    'ui.keypress',
-    'ngCookies',
-    'ngStorage'
+    oauth.name,
+    'angular-leaflet',
+    'ui.bootstrap'
+//    map.name
 ]);
-
-angular.module('osmMobileTagIt.controllers', []);
-angular.module('osmMobileTagIt.services', []);
-angular.module('osmMobileTagIt.directives', []);
-
