@@ -1,9 +1,0 @@
-/gh-pages
-/static/libs.js
-/static/built.js
-logs/*
-!.gitkeep
-node_modules/
-tmp
-.DS_Store
-.idea
