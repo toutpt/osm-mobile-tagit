@@ -1,5 +1,18 @@
 <div>
-  <h1>{{ vm.name }}</h1>
-  <button ng-click="vm.login()">login</button>
-
+  <button class="btn btn-default btn-block ng-hide"
+    ng-show="!vm.authenticated"
+    ng-click="vm.login()">login</button>
+  <div class="ng-hide btn-group" ng-show="vm.data" uib-dropdown>
+    <button type="button" class="btn btn-default"
+      uib-dropdown-toggle>
+      {{vm.data.osm.user._display_name}}
+      <span class="caret"></span>
+    </button>
+    <ul class="dropdown-menu" uib-dropdown-menu role="menu">
+      <li role="menuitem">
+        <a ng-click="vm.logout()">Se déconnecter</a>
+      </li>
+    </ul>
+  </div>
+  <div class="alert alert-danger ng-hide" ng-show="vm.err">{{ vm.err }}</div>
 </div>

@@ -1,29 +1,36 @@
+function loadUserDetails($ctrl) {
+  function onUserDetails(res) {
+    $ctrl.data = res;
+    console.log(res);
+  }
+  function onError(err) {
+    $ctrl.err = err;
+  }
+  if ($ctrl.oauth.authenticated()) {
+    $ctrl.authenticated = true;
+    $ctrl.api.setOauth($ctrl.oauth);
+    $ctrl.api.getUserDetails()
+    .then(onUserDetails, onError);
+  } else {
+    $ctrl.authenticated = false;
+  }
+}
+
 class OsmtiUserController {
-  constructor(osmAuthService) {
+  constructor(osmAuthService, osmAPI) {
     this.name = 'osmtiUser';
-    this.service = osmAuthService
+    this.oauth = osmAuthService;
+    this.api = osmAPI;
+    this.authenticated = false;
+    loadUserDetails(this);
   }
   login() {
     var $ctrl = this;
-    this.service.authenticate().then(function () {
-      if ($ctrl.service.authenticated()) {
-        $ctrl.authenticated = true;
-        $ctrl.service.xhr({
-            method: 'GET',
-            path: '/api/0.6/user/details'
-        }).then(onUserDetails, onError);
-      } else {
-        $ctrl.authenticated = false;
-      }
+    this.oauth.authenticate().then(function () {
+      loadUserDetails($ctrl);
     });
-    function onUserDetails(res) {
-      $ctrl.data = res;
-    }
-    function onError(err) {
-      $ctrl.err = err;
-    }
   }
 
 }
-OsmtiUserController.$inject = ['osmAuthService'];
+OsmtiUserController.$inject = ['osmAuthService', 'osmAPI'];
 export default OsmtiUserController;

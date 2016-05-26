@@ -1,7 +1,8 @@
 import osmtiMapComponent from './osmtiMap.component';
+import leaflet from 'angular-leaflet-light';
 
 let osmtiMapModule = angular.module('osmtiMap', [
-    'angular-leaflet'
+    leaflet.name
 ])
 
 .component('osmtiMap', osmtiMapComponent);

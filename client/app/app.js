@@ -2,7 +2,8 @@ import Components from './components/components';
 import AppComponent from './app.component';
 
 angular.module('app', [
-    Components.name
+    Components.name,
+    'ui.bootstrap'
   ])
 
   .component('app', AppComponent);

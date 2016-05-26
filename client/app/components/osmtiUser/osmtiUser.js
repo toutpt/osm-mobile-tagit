@@ -1,4 +1,5 @@
 import osmtiUserComponent from './osmtiUser.component';
+import osm from 'angular-osm';
 
 let osmtiUserModule = angular.module('osmtiUser', [
     'osm.oauth',
